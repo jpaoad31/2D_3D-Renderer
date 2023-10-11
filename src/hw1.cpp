@@ -179,7 +179,7 @@ BBox findBBox(Triangle triangle) {
 	return bbox;
 }
 
-bool inCircle(Vector2 center, Real radius, int x, int y) {
+bool inCircle(Vector2 center, Real radius, Real x, Real y) {
 	Real dist 	= (x - center.x)*(x - center.x)
 				+ (y - center.y)*(y - center.y);
 	dist = sqrt(dist);
@@ -191,7 +191,7 @@ bool inCircle(Vector2 center, Real radius, int x, int y) {
 	return false;
 }
 
-bool inTriangle(Vector2 p0, Vector2 p1, Vector2 p2, int x, int y) {
+bool inTriangle(Vector2 p0, Vector2 p1, Vector2 p2, Real x, Real y) {
 	Vector2 q;
 	q.x = x;
 	q.y = y;
@@ -224,6 +224,11 @@ bool inTriangle(Vector2 p0, Vector2 p1, Vector2 p2, int x, int y) {
 	return false;
 }
 
+bool inRectangle (Vector2 p_min, Vector2 p_max, Real x, Real y) {
+	if (x > p_min.x && x < p_max.x && y > p_min.y && y < p_max.y) return true;
+	return false;
+}
+
 Image3 hw_1_3(const std::vector<std::string> &params) {
     // Homework 1.3: render multiple shapes
     if (params.size() == 0) {
@@ -253,7 +258,7 @@ Image3 hw_1_3(const std::vector<std::string> &params) {
 			int ymax = min2(bbox.p_max.y, img.height);
 			for (int x = xmin; x < xmax; x++) {
 				for (int y = ymin; y < ymax; y++) {
-					if (inCircle(circle.center, circle.radius, x, y)) {
+					if (inCircle(circle.center, circle.radius, (Real) x, (Real) y)) {
 						img(x, y) = circle.color;
 					}
 				}
@@ -292,6 +297,50 @@ Image3 hw_1_3(const std::vector<std::string> &params) {
     return img;
 }
 
+Real progress = 1.0;
+
+void hw_1_4_animate(const std::vector<std::string> &parameters) {
+	progress = 0.1;
+	Image3 img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(0).png", img);
+	
+	progress = 0.2;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(1).png", img);
+	
+	progress = 0.3;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(2).png", img);
+	
+	progress = 0.4;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(3).png", img);
+	
+	progress = 0.5;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(4).png", img);
+	
+	progress = 0.6;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(5).png", img);
+	
+	progress = 0.7;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(6).png", img);
+	
+	progress = 0.8;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(7).png", img);
+	
+	progress = 0.9;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(8).png", img);
+	
+	progress = 1.0;
+	img = hw_1_4(parameters);
+	imwrite("animate/hw_1_4(9).png", img);
+}
+
 Image3 hw_1_4(const std::vector<std::string> &params) {
     // Homework 1.4: render transformed shapes
     if (params.size() == 0) {
@@ -305,9 +354,76 @@ Image3 hw_1_4(const std::vector<std::string> &params) {
 
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
+			img(x, y) = scene.background;
         }
     }
+	
+	auto shape = scene.shapes.begin();
+	
+	while (shape != scene.shapes.end()) {
+		if (auto *circ = std::get_if<Circle>(&*shape)) {
+			Circle circle = *circ;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = circle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x), Real(y), Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inCircle(circle.center, circle.radius, obj.x, obj.y)) {
+						img(x, y) = circle.color;
+					}
+				}
+			}
+		} else if (auto *rect = std::get_if<Rectangle>(&*shape)) {
+			Rectangle rectangle = *rect;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = rectangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x), Real(y), Real(1));
+					Vector3 obj = Fp * scr;
+					if (inRectangle(rectangle.p_min, rectangle.p_max, obj.x, obj.y)) {
+						img(x, y) = rectangle.color;
+					}
+				}
+			}
+		} else if (auto *tri = std::get_if<Triangle>(&*shape)) {
+			Triangle triangle = *tri;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = triangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x), Real(y), Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inTriangle(triangle.p0, triangle.p1, triangle.p2, obj.x, obj.y)) {
+						img(x, y) = triangle.color;
+					}
+				}
+			}
+		}
+		shape++;
+	}
+	
     return img;
 }
 
@@ -320,7 +436,7 @@ Image3 hw_1_5(const std::vector<std::string> &params) {
     Scene scene = parse_scene(params[0]);
     std::cout << scene << std::endl;
 
-    Image3 img(scene.resolution.x, scene.resolution.y);
+    Image3 img(scene.resolution.x * 2, scene.resolution.y * 2);
 
     for (int y = 0; y < img.height; y++) {
         for (int x = 0; x < img.width; x++) {
