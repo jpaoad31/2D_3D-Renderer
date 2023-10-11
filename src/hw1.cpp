@@ -432,18 +432,110 @@ Image3 hw_1_5(const std::vector<std::string> &params) {
     if (params.size() == 0) {
         return Image3(0, 0);
     }
+	
+	int ss = 3; // define how much super-sampling to do
 
     Scene scene = parse_scene(params[0]);
     std::cout << scene << std::endl;
 
-    Image3 img(scene.resolution.x * 2, scene.resolution.y * 2);
+    Image3 img(scene.resolution.x * ss, scene.resolution.y * ss);
 
-    for (int y = 0; y < img.height; y++) {
-        for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
-        }
-    }
-    return img;
+	for (int y = 0; y < img.height; y++) {
+		for (int x = 0; x < img.width; x++) {
+			img(x, y) = scene.background;
+		}
+	}
+	
+	auto shape = scene.shapes.begin();
+	
+	while (shape != scene.shapes.end()) {
+		if (auto *circ = std::get_if<Circle>(&*shape)) {
+			Circle circle = *circ;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = circle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inCircle(circle.center, circle.radius, obj.x, obj.y)) {
+						img(x, y) = circle.color;
+					}
+				}
+			}
+		} else if (auto *rect = std::get_if<Rectangle>(&*shape)) {
+			Rectangle rectangle = *rect;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = rectangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					if (inRectangle(rectangle.p_min, rectangle.p_max, obj.x, obj.y)) {
+						img(x, y) = rectangle.color;
+					}
+				}
+			}
+		} else if (auto *tri = std::get_if<Triangle>(&*shape)) {
+			Triangle triangle = *tri;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = triangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inTriangle(triangle.p0, triangle.p1, triangle.p2, obj.x, obj.y)) {
+						img(x, y) = triangle.color;
+					}
+				}
+			}
+		}
+		shape++;
+	}
+	
+	Image3 ssimg(scene.resolution.x, scene.resolution.y);
+	
+	for (int y = 0; y < ssimg.height; y++) {
+		for (int x = 0; x < ssimg.width; x++) {
+			
+			Vector3 sum;
+			
+			sum.x = Real(0);
+			sum.y = Real(0);
+			sum.z = Real(0);
+			
+			for (int i = 0; i < ss; i++) {
+				for (int j = 0; j < ss; j++) {
+					sum = sum + img(ss*x + i, ss*y + j);
+				}
+			}
+			//sum = img(ss*x, ss*y  ) + img(ss*x+1, ss*y)
+			//+ img(ss*x, ss*y+1) + img(ss*x+1, ss*y+1);
+			
+			ssimg(x, y) = sum * (Real(1) / Real(ss * ss));
+		}
+	}
+	
+    return ssimg;
 }
 
 Image3 hw_1_6(const std::vector<std::string> &params) {
@@ -452,15 +544,110 @@ Image3 hw_1_6(const std::vector<std::string> &params) {
         return Image3(0, 0);
     }
 
-    Scene scene = parse_scene(params[0]);
-    std::cout << scene << std::endl;
+	int ss = 3; // define how much super-sampling to do
 
-    Image3 img(scene.resolution.x, scene.resolution.y);
+	Scene scene = parse_scene(params[0]);
+	std::cout << scene << std::endl;
 
-    for (int y = 0; y < img.height; y++) {
-        for (int x = 0; x < img.width; x++) {
-            img(x, y) = Vector3{1, 1, 1};
-        }
-    }
-    return img;
+	Image3 img(scene.resolution.x * ss, scene.resolution.y * ss);
+
+	for (int y = 0; y < img.height; y++) {
+		for (int x = 0; x < img.width; x++) {
+			img(x, y) = scene.background;
+		}
+	}
+	
+	auto shape = scene.shapes.begin();
+	
+	while (shape != scene.shapes.end()) {
+		if (auto *circ = std::get_if<Circle>(&*shape)) {
+			Circle circle = *circ;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = circle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inCircle(circle.center, circle.radius, obj.x, obj.y)) {
+						img(x, y) = circle.color * circle.alpha
+								  + img(x, y) * (1.0 - circle.alpha);
+					}
+				}
+			}
+		} else if (auto *rect = std::get_if<Rectangle>(&*shape)) {
+			Rectangle rectangle = *rect;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = rectangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					if (inRectangle(rectangle.p_min, rectangle.p_max, obj.x, obj.y)) {
+						img(x, y) = rectangle.color * rectangle.alpha
+								  + img(x,y) * (1 - rectangle.alpha);
+					}
+				}
+			}
+		} else if (auto *tri = std::get_if<Triangle>(&*shape)) {
+			Triangle triangle = *tri;
+			
+			// compute tranformation and inverse transform matrices
+			Matrix3x3 F = triangle.transform;
+			Matrix3x3 Fp = inverse(F);
+			
+			for (int x = 0; x < img.width; x++) {
+				for (int y = 0; y < img.height; y++) {
+					
+					// screen coordinates → object coordinates
+					Vector3 scr = Vector3(Real(x)/ss, Real(y)/ss, Real(1));
+					Vector3 obj = Fp * scr;
+					
+					// test if in shape
+					if (inTriangle(triangle.p0, triangle.p1, triangle.p2, obj.x, obj.y)) {
+						img(x, y) = triangle.color * triangle.alpha
+								  + img(x, y) * (1 - triangle.alpha);
+					}
+				}
+			}
+		}
+		shape++;
+	}
+	
+	Image3 ssimg(scene.resolution.x, scene.resolution.y);
+	
+	for (int y = 0; y < ssimg.height; y++) {
+		for (int x = 0; x < ssimg.width; x++) {
+			
+			Vector3 sum;
+			
+			sum.x = Real(0);
+			sum.y = Real(0);
+			sum.z = Real(0);
+			
+			for (int i = 0; i < ss; i++) {
+				for (int j = 0; j < ss; j++) {
+					sum = sum + img(ss*x + i, ss*y + j);
+				}
+			}
+			//sum = img(ss*x, ss*y  ) + img(ss*x+1, ss*y)
+			//+ img(ss*x, ss*y+1) + img(ss*x+1, ss*y+1);
+			
+			ssimg(x, y) = sum * (Real(1) / Real(ss * ss));
+		}
+	}
+	
+	return ssimg;
 }
