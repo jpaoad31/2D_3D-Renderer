@@ -68,7 +68,7 @@
 		521E29102AD3A94D00D71918 /* flexception.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = flexception.h; path = ../src/flexception.h; sourceTree = "<group>"; };
 		521E29112AD3A94D00D71918 /* hw3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = hw3.h; path = ../src/hw3.h; sourceTree = "<group>"; };
 		521E29262AD3A9BA00D71918 /* 3rdparty */ = {isa = PBXFileReference; lastKnownFileType = folder; name = 3rdparty; path = ../src/3rdparty; sourceTree = "<group>"; };
-		528F47472AD70BF5000D3C31 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../src/README.md; sourceTree = "<group>"; };
+		52FBD8B02AD9D75300C7E7EB /* scenes */ = {isa = PBXFileReference; lastKnownFileType = folder; name = scenes; path = ../scenes; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +85,7 @@
 		521E28EA2AD39B0200D71918 = {
 			isa = PBXGroup;
 			children = (
+				52FBD8B02AD9D75300C7E7EB /* scenes */,
 				521E29262AD3A9BA00D71918 /* 3rdparty */,
 				521E29092AD3A94D00D71918 /* balboa.h */,
 				521E29102AD3A94D00D71918 /* flexception.h */,
@@ -105,7 +106,6 @@
 				521E290E2AD3A94D00D71918 /* main.cpp */,
 				521E29022AD3A94D00D71918 /* matrix.h */,
 				521E290D2AD3A94D00D71918 /* timer.h */,
-				528F47472AD70BF5000D3C31 /* README.md */,
 				521E29062AD3A94D00D71918 /* vector.h */,
 				521E28FD2AD39B3900D71918 /* src */,
 				521E28F52AD39B0200D71918 /* cse167 */,

@@ -68,10 +68,11 @@ Image3 hw_1_2(const std::vector<std::string> &params) {
 				
 				// check for bounding box
 				while (object != scene.objects.rend()) {
-					if (abs(x - object->center.x) < object->radius &&
-						abs(y - object->center.y) < object->radius) {
-						
-						Circle circle = *object;
+					
+					Circle circle = *object;
+					
+					if (abs(x - circle.center.x) < circle.radius &&
+						abs(y - circle.center.y) < circle.radius) {
 						
 						Real dist 	= (x - circle.center.x)*(x - circle.center.x)
 									+ (y - circle.center.y)*(y - circle.center.y);
@@ -433,7 +434,7 @@ Image3 hw_1_5(const std::vector<std::string> &params) {
         return Image3(0, 0);
     }
 	
-	int ss = 3; // define how much super-sampling to do
+	int ss = 4; // define how much super-sampling to do
 
     Scene scene = parse_scene(params[0]);
     std::cout << scene << std::endl;
@@ -544,7 +545,7 @@ Image3 hw_1_6(const std::vector<std::string> &params) {
         return Image3(0, 0);
     }
 
-	int ss = 3; // define how much super-sampling to do
+	int ss = 4; // define how much super-sampling to do
 
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
