@@ -1,7 +1,27 @@
 #include "hw2.h"
 #include "hw2_scenes.h"
 
-
+// downSamples image ssimg to img by factor ss
+void downSample(int ss, Image3* ssimg, Image3* img) {
+	for (int y = 0; y < img->height; y++) {
+		for (int x = 0; x < img->width; x++) {
+			
+			Vector3 sum;
+			
+			sum.x = Real(0);
+			sum.y = Real(0);
+			sum.z = Real(0);
+			
+			for (int i = 0; i < ss; i++) {
+				for (int j = 0; j < ss; j++) {
+					sum = sum + (*ssimg)(ss*x + i, ss*y + j);
+				}
+			}
+			
+			(*img)(x, y) = sum * (Real(1) / Real(ss * ss));
+		}
+	}
+}
 
 // return 1 if triangle is behind clipping plane
 bool clipTri(Vector3 p0, Vector3 p1, Vector3 p2, Real z_near) {
@@ -15,39 +35,7 @@ bool clipTri(Vector3 p0, Vector3 p1, Vector3 p2, Real z_near) {
 	return (maxZ >= z_near);
 }
 
-bool inTriangle(Vector2 p0, Vector2 p1, Vector2 p2, Real x, Real y) {
-	Vector2 q;
-	q.x = x;
-	q.y = y;
-	
-	Vector2 v0 = p1 - p0;
-	Vector2 v1 = p2 - p1;
-	Vector2 v2 = p0 - p2;
-	
-	Vector2 q0, q1, q2;
-	
-	q0 = q - p0;
-	q1 = q - p1;
-	q2 = q - p2;
-	
-	Vector2 n0, n1, n2;
-	n0.x = v0.y;
-	n0.y = - v0.x;
-	n1.x = v1.y;
-	n1.y = - v1.x;
-	n2.x = v2.y;
-	n2.y = - v2.x;
-	
-	Real a = dot(q0, n0);
-	Real b = dot(q1, n1);
-	Real c = dot(q2, n2);
-	
-	if (a > 0 && b > 0 && c > 0) return true;
-	if (a < 0 && b < 0 && c < 0) return true;
-	
-	return false;
-}
-
+// projects p0, p1, p2 onto image plane (s, a, w, h) at q0, q1, q2
 void projTri(Real s, Real a, int w, int h,
 			 Vector3* p0, Vector3* p1, Vector3* p2,
 			 Vector2* q0, Vector2* q1, Vector2* q2) {
@@ -67,17 +55,17 @@ void projTri(Real s, Real a, int w, int h,
 	
 	q0->x = w * ((q0->x + (s*a))/
 				 (2 * s * a));
-	q0->y = h * ((q0->y + s)/
+	q0->y = h * ((s - q0->y)/
 				 (2 * s));
 	
 	q1->x = w * ((q1->x + (s*a))/
 				 (2 * s * a));
-	q1->y = h * ((q1->y + s)/
+	q1->y = h * ((s - q1->y)/
 				 (2 * s));
 	
 	q2->x = w * ((q2->x + (s*a))/
 				 (2 * s * a));
-	q2->y = h * ((q2->y + s)/
+	q2->y = h * ((s - q2->y)/
 				 (2 * s));
 }
 
@@ -157,8 +145,8 @@ Image3 hw_2_1(const std::vector<std::string> &params) {
 		}
 	}
 	
-	ssimg (300, 200) = Vector3{1.0, 0.0, 0.0};
-	return ssimg;
+	downSample(4, &ssimg, &img);
+	return img;
 }
 
 Image3 hw_2_2(const std::vector<std::string> &params) {

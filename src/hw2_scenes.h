@@ -37,3 +37,5 @@ std::ostream& operator<<(std::ostream &os, const TriangleMesh &mesh);
 std::ostream& operator<<(std::ostream &os, const Scene &scene);
 
 } // namespace hw2
+
+
