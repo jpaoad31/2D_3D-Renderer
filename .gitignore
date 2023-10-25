@@ -41,3 +41,4 @@ build/
 __pycache__/
 .DS_Store
 handouts/
+cse167/cse167.xcodeproj
