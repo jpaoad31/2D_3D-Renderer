@@ -20,3 +20,6 @@ bool clipTri(Vector3 p0, Vector3 p1, Vector3 p2, Real z_near);
 void projTri(Real s, Real a, int w, int h,
 			 Vector3* p0, Vector3* p1, Vector3* p2,
 			 Vector2* q0, Vector2* q1, Vector2* q2);
+void compZTri(Vector3* p0, Vector3* p1, Vector3* p2,
+			  Vector2* q0, Vector2* q1, Vector2* q2,
+			  Real z);
