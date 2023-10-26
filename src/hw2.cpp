@@ -425,12 +425,22 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
 	if (params.size() == 0) {
 		return Image3(0, 0);
 	}
+	
+	Matrix4x4 proj;
+	proj(0,0) = 1;
+	proj(1,1) = 1;
+	proj(4,3) = -1;
+	proj(3,4) = 1;
+	
+	Matrix4x4 c2s;
 
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
 
 	Image3 img(scene.camera.resolution.x,
 			   scene.camera.resolution.y);
+	int ss = 4;
+	Image3 ssimg(img.width * ss, img.height * ss);
 
 	for (int y = 0; y < img.height; y++) {
 		for (int x = 0; x < img.width; x++) {
