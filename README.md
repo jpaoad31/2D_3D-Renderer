@@ -5,11 +5,17 @@ I did not do any of the bonus points, but I did implement a lazy z-buffer occlus
 
 ## 2.5 Design a Scene
 
-Honestly It took me like 2 hours to figure out how to map textures to vertex coordinates so I don't think I have the patience to set up a proper scene. So you get Luigi.
+scene: `scenes/hw2/luigi.json`
 
-Credits to Nintendo (because he is ripped directly out of Super Mario Bros. Wonder) I did some surface subdivision on his eyes and hat to improve the texture rendering in those locations.
+image: `outputs/luigi.png`
 
-He has 26417 Vertices and I got it to render in only 0.175 seconds on an M1, so I think that's pretty optimized if I do say so myself.
+Honestly It took me like 2 hours to figure out how to map textures to vertex coordinates in blender so I don't think I have the patience to set up a proper scene. So you get Luigi.
+
+Credits to Nintendo (because he is ripped directly out of Super Mario Bros. Wonder) I did some modifications: surface subdivision on his eyes and hat to improve the texture rendering in those locations, and of course converting the textures to vertex colors (although they are quite crude looking).
+
+He has 26417 Vertices and I got it to render in only 0.175 seconds on a base M1 Mac, so I think that's pretty optimized if I do say so myself.
+
+Similarly the teapot renders in 0.048 seconds in my implmentation.
 
 
 #  HW 1
