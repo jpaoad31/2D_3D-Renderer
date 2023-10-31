@@ -1,0 +1,30 @@
+{
+    "camera":
+    {
+        "resolution": [480, 640],
+        "transform": [
+            {
+                "lookat":
+                {
+                    "position": [0.0, 2.0, 2],
+                    "target": [0, 0, -5],
+                    "up": [0, 1.5, 0]
+                }
+            }
+        ],
+        "s": 0.8,
+        "z_near": 1e-6
+    },
+    "background": [
+        0.5, 0.5, 0.5
+    ],
+    "objects": [
+        {
+            "filename": "luigi.ply",
+            "transform": [
+                {"scale": [1.0, 1.0, 1.0]},
+                {"translate": [0.0, 0.0, 0.0]}
+            ]
+        }
+    ]
+}

@@ -219,8 +219,8 @@ bool inTriangle(Vector2 p0, Vector2 p1, Vector2 p2, Real x, Real y) {
 	Real b = dot(q1, n1);
 	Real c = dot(q2, n2);
 	
-	if (a > 0 && b > 0 && c > 0) return true;
-	if (a < 0 && b < 0 && c < 0) return true;
+	if (a >= 0 && b >= 0 && c >= 0) return true;
+	if (a <= 0 && b <= 0 && c <= 0) return true;
 	
 	return false;
 }

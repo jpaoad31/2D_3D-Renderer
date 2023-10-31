@@ -255,21 +255,33 @@ Matrix4x4 parse_transformation(const json &node) {
 				(*rotate_it)[1], (*rotate_it)[2], (*rotate_it)[3]
 			});
 			
-			Real theta = (angle * c_PI) / 180;
+			Real theta = (angle / 180) * c_PI;
+			
+			Real cs = cos(theta);
+			Real si = sin(theta);
+			
+			Real x = axis.x;
+			Real x2 = x * x;
+			
+			Real y = axis.y;
+			Real y2 = y * y;
+			
+			Real z = axis.z;
+			Real z2 = z * z;
 			
 			Matrix4x4 R = Matrix4x4::identity();
 			
-			R(0, 0) = (axis.x * axis.x) + ((1 - (axis.x * axis.x))* cos(theta));
-			R(1, 0) = (axis.x * axis.y * (1 - cos(theta))) + (axis.z * sin(theta));
-			R(2, 0) = (axis.x * axis.z * (1 - cos(theta))) - (axis.y * sin(theta));
+			R(0, 0) = x2 + ((1 - x2)* cs);
+			R(1, 0) = (x * y * (1 - cs)) + (z * si);
+			R(2, 0) = (x * z * (1 - cs)) - (y * si);
 			
-			R(0, 1) = (axis.y * axis.x * (1 - cos(theta))) - (axis.z * sin(theta));
-			R(1, 1) = (axis.y * axis.y) + ((1 - (axis.y * axis.y)) * cos(theta));
-			R(2, 1) = (axis.y * axis.z * (1 - cos(theta))) + (axis.x * sin(theta));
+			R(0, 1) = (y * x * (1 - cs)) - (z * si);
+			R(1, 1) = y2 + ((1 - y2) * cs);
+			R(2, 1) = (y * z * (1 - cs)) + (x * si);
 			
-			R(0, 2) = (axis.z * axis.x * (1 - cos(theta))) + (axis.y * sin(theta));
-			R(1, 2) = (axis.z * axis.y * (1 - cos(theta))) - (axis.x * sin(theta));
-			R(2, 2) = (axis.z * axis.x) + ((1 - (axis.z * axis.z)) * cos(theta));
+			R(0, 2) = (z * x * (1 - cs)) + (y * si);
+			R(1, 2) = (z * y * (1 - cs)) - (x * si);
+			R(2, 2) = z2 + ((1 - z2) * cs);
 			
 			F = R * F;
 			
@@ -325,9 +337,9 @@ Matrix4x4 parse_transformation(const json &node) {
 			L(1,1) = up.y;
 			L(2,1) = up.z;
 			
-			L(0,2) = (-1) * d.x;
-			L(1,2) = (-1) * d.y;
-			L(2,2) = (-1) * d.z;
+			L(0,2) = (-1.0) * d.x;
+			L(1,2) = (-1.0) * d.y;
+			L(2,2) = (-1.0) * d.z;
 			
 			L(0,3) = position.x;
 			L(1,3) = position.y;

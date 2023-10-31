@@ -1,3 +1,17 @@
+# HW 2
+John Adams A16499049
+
+I did not do any of the bonus points, but I did implement a lazy z-buffer occlusion (doesn't use the hierarchy, checks per-pixel) and a 2D-BoundingBox acceleration into 2.4 to speed up rendering. (It's about 106x faster than without those two accelerations)
+
+## 2.5 Design a Scene
+
+Honestly It took me like 2 hours to figure out how to map textures to vertex coordinates so I don't think I have the patience to set up a proper scene. So you get Luigi.
+
+Credits to Nintendo (because he is ripped directly out of Super Mario Bros. Wonder) I did some surface subdivision on his eyes and hat to improve the texture rendering in those locations.
+
+He has 26417 Vertices and I got it to render in only 0.175 seconds on an M1, so I think that's pretty optimized if I do say so myself.
+
+
 #  HW 1
 John Adams A16499049
 

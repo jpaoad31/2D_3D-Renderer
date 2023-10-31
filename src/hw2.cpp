@@ -23,6 +23,41 @@ void downSample(int ss, Image3* ssimg, Image3* img) {
 	}
 }
 
+Real min3(Real a, Real b, Real c) {
+	if (a <= b && a <= c) return a;
+	else if (b <= a && b <= c) return b;
+	else return c;
+}
+
+Real max3(Real a, Real b, Real c) {
+	if (a >= b && a >= c) return a;
+	else if (b >= a && b >= c) return b;
+	else return c;
+}
+
+Real min2(Real a, Real b) {
+	if (a <= b) return a;
+	return b;
+}
+
+Real max2(Real a, Real b) {
+	if (a >= b) return a;
+	return b;
+}
+
+Vector4 TriBB(Vector2 p0, Vector2 p1, Vector2 p2) {
+	
+	// Vector4: minx, maxx, miny, maxy
+	Vector4 bb;
+	
+	bb[0] = min3(p0.x, p1.x, p2.x);
+	bb[1] = max3(p0.x, p1.x, p2.x);
+	bb[2] = min3(p0.y, p1.y, p2.y);
+	bb[3] = max3(p0.y, p1.y, p2.y);
+	
+	return bb;
+}
+
 // return 1 if triangle is behind clipping plane
 bool clipTri(Vector3 p0, Vector3 p1, Vector3 p2, Real z_near) {
 	
@@ -69,41 +104,36 @@ void projTri(Real s, Real a, int w, int h,
 				 (2 * s));
 }
 
-//
-void Tri2cam(Vector3* p0, Vector3* p1, Vector3* p2,
-			 Vector2* q0, Vector2* q1, Vector2* q2) {
+// construct camera -> screen matrix transform
+Matrix4x4 Mc2s(Real s, Real a, int w, int h) {
+	/* assume vector looks like:
+	 * ┏      ┓
+	 * ┃ x/-z ┃
+	 * ┃ y/-z ┃
+	 * ┃  -1  ┃
+	 * ┃   1  ┃
+	 * ┗      ┛
+	 */
 	
-	// 3D space to camera space
+	/* return a matrix that looks like
+	 * ┏                       ┓
+	 * ┃ w/2sa   0     0   w/2 ┃
+	 * ┃   0   -h/2s   0   h/2 ┃
+	 * ┃   0     0     1    0  ┃
+	 * ┃   0     0     0    1  ┃
+	 * ┗                       ┛
+	 */
 	
-	q0->x = -1 * (p0->x / p0->z);
-	q0->y = -1 * (p0->y / p0->z);
+	Matrix4x4 c2s = Matrix4x4::identity();
 	
-	q1->x = -1 * (p1->x / p1->z);
-	q1->y = -1 * (p1->y / p1->z);
+	c2s(0,0) = w  / (2.0 * s * a);
 	
-	q2->x = -1 * (p2->x / p2->z);
-	q2->y = -1 * (p2->y / p2->z);
-}
-
-//
-void cam2scr(Real s, Real a, int w, int h,
-			 Vector2* q0, Vector2* q1, Vector2* q2) {
-	// camera space to image space
+	c2s(1,1) = -h / (2.0 * s);
 	
-	q0->x = w * ((q0->x + (s*a))/
-				 (2 * s * a));
-	q0->y = h * ((s - q0->y)/
-				 (2 * s));
+	c2s(0,2) = -w / 2.0;
+	c2s(1,2) = -h / 2.0;
 	
-	q1->x = w * ((q1->x + (s*a))/
-				 (2 * s * a));
-	q1->y = h * ((s - q1->y)/
-				 (2 * s));
-	
-	q2->x = w * ((q2->x + (s*a))/
-				 (2 * s * a));
-	q2->y = h * ((s - q2->y)/
-				 (2 * s));
+	return c2s;
 }
 
 // compute the z value of a given pixel projection to a triangle
@@ -143,13 +173,11 @@ Vector3 compBTri(Vector3* p0, Vector3* p1, Vector3* p2,
 	Vector3 q1_{q1->x, q1->y, 0.0};
 	Vector3 q2_{q2->x, q2->y, 0.0};
 	
-	area = length(cross((q1_ - q0_), (q2_ - q0_))) / 2;
+	area = length(cross((q1_ - q0_), (q2_ - q0_)));
 	
-	b0_ = (length(cross(q1_ - *p_, q2_ - *p_))) / 2 / area;
-	b1_ = (length(cross(q0_ - *p_, q2_ - *p_))) / 2 / area;
-	b2_ = (length(cross(q0_ - *p_, q1_ - *p_))) / 2 / area;
-	
-	//std::cout << b0_ << b1_ << b2_ << " " << b0_ + b1_ + b2_ << std::endl;
+	b0_ = (length(cross(q1_ - *p_, q2_ - *p_))) / area;
+	b1_ = (length(cross(q0_ - *p_, q2_ - *p_))) / area;
+	b2_ = (length(cross(q0_ - *p_, q1_ - *p_))) / area;
 	
 	B = 1 / ((b0_ / p0->z) + (b1_ / p1->z) + (b2_ / p2->z));
 	
@@ -432,21 +460,143 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
 	proj(4,3) = -1;
 	proj(3,4) = 1;
 	
-	Matrix4x4 c2s;
-
+	// define scene and set parameters
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
-
-	Image3 img(scene.camera.resolution.x,
-			   scene.camera.resolution.y);
+	
 	int ss = 4;
+	
+	Real s = scene.camera.s;
+	Real a = Real(scene.camera.resolution.x) / Real(scene.camera.resolution.y);
+	Image3 img(scene.camera.resolution.x, scene.camera.resolution.y);
 	Image3 ssimg(img.width * ss, img.height * ss);
-
-	for (int y = 0; y < img.height; y++) {
-		for (int x = 0; x < img.width; x++) {
-			img(x, y) = Vector3{1, 1, 1};
+	
+	Real z_near = scene.camera.z_near;
+	
+	Vector3 background = scene.background;
+	
+	// camera to screen matrix
+	Matrix4x4 c2s = Mc2s(s, a, ssimg.width, ssimg.height);
+	
+	// screen to camera matrix
+	Matrix4x4 s2c = inverse(c2s);
+	
+	Matrix4x4 c2w = scene.camera.cam_to_world;
+	Matrix4x4 w2c = inverse(c2w);
+	
+	// init z buffer & set background color
+	Real z;
+	Image1 z_buf(ssimg.width, ssimg.height);
+	for (int i = 0; i < ssimg.width; i++) {
+		for (int j = 0; j < ssimg.height; j++) {
+			z_buf(i, j) = - std::numeric_limits<Real>::infinity();
+			ssimg(i, j) = background;
 		}
 	}
+	
+	// object to world space transform
+	Matrix4x4 o2w;
+	
+	// object vertices etc.
+	Vector4 r0, r1, r2;
+	
+	// screen space vertices
+	Vector3 p0, p1, p2, color, c0, c1, c2;
+	Vector2 q0, q1, q2;
+	
+	// z- buffer acceleration
+	Real max_z;
+	// bounding box acceleration
+	Vector4 BB;
+	
+	int meshes = (int) scene.meshes.size();
+	
+	// iterate over each object mesh
+	for (int m = 0; m < meshes; m++) {
+		auto mesh = scene.meshes[m];
+		
+		o2w = mesh.model_matrix;
+		
+		int faces = (int) mesh.faces.size();
+		
+		// iterate over each face of the mesh
+		for (int f = 0; f < faces; f++) {
+			
+			// get vertices
+			r0.x = mesh.vertices[mesh.faces[f][0]].x;
+			r0.y = mesh.vertices[mesh.faces[f][0]].y;
+			r0.z = mesh.vertices[mesh.faces[f][0]].z;
+			r0.w = 1.0;
+			
+			r1.x = mesh.vertices[mesh.faces[f][1]].x;
+			r1.y = mesh.vertices[mesh.faces[f][1]].y;
+			r1.z = mesh.vertices[mesh.faces[f][1]].z;
+			r1.w = 1.0;
+			
+			r2.x = mesh.vertices[mesh.faces[f][2]].x;
+			r2.y = mesh.vertices[mesh.faces[f][2]].y;
+			r2.z = mesh.vertices[mesh.faces[f][2]].z;
+			r2.w = 1.0;
+			
+			// get vertex colors
+			c0 = mesh.vertex_colors[mesh.faces[f][0]];
+			c1 = mesh.vertex_colors[mesh.faces[f][1]];
+			c2 = mesh.vertex_colors[mesh.faces[f][2]];
+			
+			// transform to world space
+			r0 = o2w * r0; r1 = o2w * r1; r2 = o2w * r2;
+			
+			// transform to camera space
+			r0 = w2c * r0; r1 = w2c * r1; r2 = w2c * r2;
+			
+			// convert to 3D coordinates so I can use my old code
+			// tbh I have no idea how to do the matrix projection
+			
+			p0 = Vector3(r0.x, r0.y, r0.z);
+			p1 = Vector3(r1.x, r1.y, r1.z);
+			p2 = Vector3(r2.x, r2.y, r2.z);
+			
+			
+			// dont draw clipped triangles
+			if (clipTri(p0, p1, p2, z_near)) {
+				fprintf(stderr, "clip triangle, don't render\n");
+				continue;
+			}
+			
+			projTri(s, a, ssimg.width, ssimg.height, &p0, &p1, &p2, &q0, &q1, &q2);
+			max_z = max3(p0.z, p1.z, p2.z);
+			
+			// only check triangles in the bounding box
+			BB = TriBB(q0, q1, q2);
+			for (int y = max2(BB[2] - 1, 0); y < min2(BB[3] + 1, ssimg.height); y++) {
+				for (int x = max2(BB[0] - 1, 0); x < min2(BB[1] + 1, ssimg.width); x++) {
+					
+					// Z-buffer acceleration (basic)
+					if (max_z < z_buf(x, y)) continue;
+					
+					// 2D in triangle check
+					if (!inTriangle(q0, q1, q2, x, y)) continue;
+					
+					Vector3 p_(Real(x), Real(y), 0.0);
+					
+					Vector3 b_coor = compBTri(&p0, &p1, &p2, &q0, &q1, &q2, &p_);
+					
+					color = (b_coor.x * c0) + (b_coor.y * c1) + (b_coor.z * c2);
+					
+					z = (b_coor[0] * p0.z) + (b_coor[1] * p1.z) + (b_coor[2] * p2.z);
+					
+					if (z > z_buf(x, y)) {
+						z_buf(x, y) = z;
+						ssimg(x, y) = color;
+					}
+				}
+			}
+			
+		}
+	}
+	
+	downSample(ss, &ssimg, &img);
+	
 	return img;
 }
 

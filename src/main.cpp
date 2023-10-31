@@ -50,7 +50,10 @@ int main(int argc, char *argv[]) {
         Image3 img = hw_2_3(parameters);
         imwrite("hw_2_3.png", img);
     } else if (hw_num == "2_4") {
+		Timer timer;
+		tick(timer);
         Image3 img = hw_2_4(parameters);
+		std::cout << "hw_1_2 took " << tick(timer) << " seconds." << std::endl;
         imwrite("hw_2_4.png", img);
     } else if (hw_num == "3_1") {
         hw_3_1(parameters);
