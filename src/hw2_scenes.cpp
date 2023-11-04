@@ -400,7 +400,7 @@ Scene parse_scene(const fs::path &filename) {
         } else {
             auto vertices_it = it->find("vertices");
             if (vertices_it != it->end()) {
-                int num_vertices = vertices_it->size() / 3;
+                int num_vertices = (int) vertices_it->size() / 3;
                 mesh.vertices.resize(num_vertices);
                 for (int i = 0; i < num_vertices; i++) {
                     mesh.vertices[i] = Vector3{
@@ -412,7 +412,7 @@ Scene parse_scene(const fs::path &filename) {
             }
             auto faces_it = it->find("faces");
             if (faces_it != it->end()) {
-                int num_triangles = faces_it->size() / 3;
+                int num_triangles = (int) faces_it->size() / 3;
                 mesh.faces.resize(num_triangles);
                 for (int i = 0; i < num_triangles; i++) {
                     mesh.faces[i] = Vector3i{
@@ -424,7 +424,7 @@ Scene parse_scene(const fs::path &filename) {
             }
             auto vertex_colors_it = it->find("vertex_colors");
             if (vertex_colors_it != it->end()) {
-                int num_vertices = vertex_colors_it->size() / 3;
+                int num_vertices = (int) vertex_colors_it->size() / 3;
                 mesh.vertex_colors.resize(num_vertices);
                 if (mesh.vertex_colors.size() != mesh.vertices.size()) {
                     Error("Mesh has different number of vertices and number of colors.");

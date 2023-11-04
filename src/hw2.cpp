@@ -142,9 +142,9 @@ Real compZTri(Vector3* p0, Vector3* p1, Vector3* p2,
 			  Vector3* p_) {
 	Real b0_, b1_, b2_, b0, b1, b2, area, B, z;
 	
-	Vector3 q0_{q0->x, q0->y, 0.0};
-	Vector3 q1_{q1->x, q1->y, 0.0};
-	Vector3 q2_{q2->x, q2->y, 0.0};
+	Vector3 q0_{q0->x, q0->y, Real(0.0)};
+	Vector3 q1_{q1->x, q1->y, Real(0.0)};
+	Vector3 q2_{q2->x, q2->y, Real(0.0)};
 	
 	area = length(cross((q1_ - q0_), (q2_ - q0_))) / 2;
 	
@@ -169,9 +169,9 @@ Vector3 compBTri(Vector3* p0, Vector3* p1, Vector3* p2,
 				 Vector3* p_) {
 	Real b0_, b1_, b2_, b0, b1, b2, area, B;
 	
-	Vector3 q0_{q0->x, q0->y, 0.0};
-	Vector3 q1_{q1->x, q1->y, 0.0};
-	Vector3 q2_{q2->x, q2->y, 0.0};
+	Vector3 q0_{q0->x, q0->y, Real(0.0)};
+	Vector3 q1_{q1->x, q1->y, Real(0.0)};
+	Vector3 q2_{q2->x, q2->y, Real(0.0)};
 	
 	area = length(cross((q1_ - q0_), (q2_ - q0_)));
 	
@@ -342,7 +342,7 @@ Image3 hw_2_2(const std::vector<std::string> &params) {
 				
 				if (!inTriangle(q0, q1, q2, x, y)) continue;
 				
-				Vector3 p_(Real(x), Real(y), 0.0);
+				Vector3 p_(Real(x), Real(y), Real(0.0));
 				
 				z = compZTri(&p0, &p1, &p2, &q0, &q1, &q2, &p_);
 				
@@ -427,7 +427,7 @@ Image3 hw_2_3(const std::vector<std::string> &params) {
 				
 				if (!inTriangle(q0, q1, q2, x, y)) continue;
 				
-				Vector3 p_(Real(x), Real(y), 0.0);
+				Vector3 p_(Real(x), Real(y), Real(0.0));
 				
 				Vector3 b_coor = compBTri(&p0, &p1, &p2, &q0, &q1, &q2, &p_);
 				
@@ -577,7 +577,7 @@ Image3 hw_2_4(const std::vector<std::string> &params) {
 					// 2D in triangle check
 					if (!inTriangle(q0, q1, q2, x, y)) continue;
 					
-					Vector3 p_(Real(x), Real(y), 0.0);
+					Vector3 p_(Real(x), Real(y), Real(0.0));
 					
 					Vector3 b_coor = compBTri(&p0, &p1, &p2, &q0, &q1, &q2, &p_);
 					

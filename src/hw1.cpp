@@ -578,7 +578,7 @@ Image3 hw_1_6(const std::vector<std::string> &params) {
 					// test if in shape
 					if (inCircle(circle.center, circle.radius, obj.x, obj.y)) {
 						img(x, y) = circle.color * circle.alpha
-								  + img(x, y) * (1.0 - circle.alpha);
+								  + img(x, y) * (Real(1.0) - circle.alpha);
 					}
 				}
 			}
