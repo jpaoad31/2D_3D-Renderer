@@ -23,7 +23,7 @@
 // numerical accuracy as much when we render.
 // Switching to floating point computation is easy --
 // just set Real = float.
-using Real = double;
+using Real = float;
 
 const Real c_PI = Real(3.14159265358979323846);
 
