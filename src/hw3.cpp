@@ -12,9 +12,26 @@ void processInput(GLFWwindow *window);
 // simple vertex shader source
 const char *vertexShaderSource = "#version 330 core\n"
 	"layout (location = 0) in vec3 aPos;\n"
-	"uniform float angle;"
+	"uniform vec2 rot;"
 	"void main() {\n"
-	"    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);\n"
+	"vec3 newPos = vec3(aPos.xy, 1.0f);"
+	"mat3 rotate;"
+
+	"rotate[0][0] = rot.y;"
+	"rotate[0][1] = rot.x;"
+	"rotate[0][2] = 0.0f;"
+
+	"rotate[1][0] = -rot.x;"
+	"rotate[1][1] = rot.y;"
+	"rotate[1][2] = 0.0f;"
+
+	"rotate[2][0] = 0.0f;"
+	"rotate[2][1] = 0.0f;"
+	"rotate[2][2] = 1.0f;"
+
+	"newPos = rotate * newPos;"
+
+	"gl_Position = vec4(newPos.x, newPos.y, 0.1f, 1.0f);\n"
 	"}\0";
 // simple fragment shader source
 const char *fragmentShaderSource = "#version 330 core\n"
@@ -190,6 +207,12 @@ void hw_3_2(const std::vector<std::string> &params) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 	
+	// rotation stuff
+	int rotLocation = glGetUniformLocation(shaderProgram, "rot");
+	float angle = 0.78539f;
+	float si = sin(angle);
+	float cs = cos(angle);
+	
 	// render loop
 	while(!glfwWindowShouldClose(window)) {
 		
@@ -201,6 +224,13 @@ void hw_3_2(const std::vector<std::string> &params) {
 		// set clear color and clear the screen
 		glClearColor(0.5f, 0.3f, 0.7f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		
+		rotLocation = glGetUniformLocation(shaderProgram, "rot");
+		angle = angle + 0.002f;
+		if (angle > (2 * 3.141592f)) angle = angle - (2 * 3.141592f);
+		si = sin(angle);
+		cs = cos(angle);
+		glUniform2f(rotLocation, si, cs);
 		
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
