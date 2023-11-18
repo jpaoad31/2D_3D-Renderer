@@ -7,7 +7,9 @@ using namespace hw3;
 
 // callback function definitions
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback3(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void processInput3(GLFWwindow *window);
 
 // simple vertex shader source
 const char *vertexShaderSource = "#version 330 core\n"
@@ -148,7 +150,7 @@ void hw_3_2(const std::vector<std::string> &params) {
 	
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
 	if(!success) {
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
 		std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
 		return;
 	}
@@ -168,6 +170,10 @@ void hw_3_2(const std::vector<std::string> &params) {
 		std::cerr << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLog << std::endl;
 		return;
 	}
+	
+	// cleanup by deleting old shader objects after linking
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
 	
 	
 	// allocating memory in the GPU
@@ -194,18 +200,12 @@ void hw_3_2(const std::vector<std::string> &params) {
 	// use our newly created and linked shader program for rendering
 	glUseProgram(shaderProgram);
 	
-	// cleanup by deleting old shader objects after linking
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
 	
 	// -----------------------
 	// linking vertex data to shader data
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 	
 	// rotation stuff
 	int rotLocation = glGetUniformLocation(shaderProgram, "rot");
@@ -247,6 +247,7 @@ void hw_3_2(const std::vector<std::string> &params) {
 	
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 	glDeleteProgram(shaderProgram);
 
 	
@@ -255,14 +256,317 @@ void hw_3_2(const std::vector<std::string> &params) {
 	
 }
 
+GLFWwindow* setup_Window(int w, int h) {
+	// setting up context and stuff
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); //macOS compatibility line
+	
+	// creating a window object
+	GLFWwindow* window = glfwCreateWindow(w, h, "3.3 do it all", NULL, NULL);
+	if (window == NULL) { std::cerr << "Failed to create GLFW window\n"; glfwTerminate(); exit(1); }
+	glfwMakeContextCurrent(window);
+	
+	// initialize GLAD
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){ std::cerr << "Failed to initialize GLAD\n"; exit(1); }
+	
+	// define viewport with respect to screen
+	glViewport(0, 0, 800, 600);
+	
+	// register callback function for window-resize
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback3);
+	
+	return window;
+}
+
+// returns shader program
+unsigned int compile_Shaders(const char** vSource, const char** fSource) {
+	unsigned int vShader, fShader, sProgram;
+	int success;
+	char infoLog[512];
+	
+	vShader = glCreateShader(GL_VERTEX_SHADER);
+	fShader = glCreateShader(GL_FRAGMENT_SHADER);
+	sProgram = glCreateProgram();
+	
+	// ------------------------
+	// ---------Vertex---------
+	// ------------------------
+	
+	// compile vertex shader
+	glShaderSource(vShader, 1, vSource, NULL); // passing in one string
+	glCompileShader(vShader);
+	
+	// error checking
+	glGetShaderiv(vShader, GL_COMPILE_STATUS, &success);
+	if(!success) {
+		glGetShaderInfoLog(vShader, 512, NULL, infoLog);
+		std::cerr << "vertex shader failed to compile\n" << infoLog << std::endl;
+		exit(1);
+	}
+	
+	// ------------------------
+	// --------Fragment--------
+	// ------------------------
+	
+	// compile fragment shader
+	glShaderSource(fShader, 1, fSource, NULL);
+	glCompileShader(fShader);
+	
+	// error checking
+	glGetShaderiv(fShader, GL_COMPILE_STATUS, &success);
+	if(!success) {
+		glGetShaderInfoLog(fShader, 512, NULL, infoLog);
+		std::cerr << "fragment shader failed to compile\n" << infoLog << std::endl;
+		exit(1);
+	}
+	
+	// ------------------------
+	// --------Program---------
+	// ------------------------
+	
+	// attach shaders to program
+	glAttachShader(sProgram, vShader);
+	glAttachShader(sProgram, fShader);
+	glLinkProgram(sProgram);
+	
+	// error checking
+	glGetProgramiv(sProgram, GL_LINK_STATUS, &success);
+	if(!success) {
+		glGetProgramInfoLog(sProgram, 512, NULL, infoLog);
+		std::cerr << "shader program link failed\n" << infoLog << std::endl;
+		exit(1);
+	}
+	
+	// cleanup by deleting old shader objects after linking
+	glDeleteShader(vShader);
+	glDeleteShader(fShader);
+	
+	return sProgram;
+}
+
+Matrix4x4 clipMatrix(Real s, Real a, Real z_near, Real z_far) {
+	Matrix4x4 clip;
+	clip(0,0) = 1.0f / (s * a);
+	
+	clip(1,1) = 1.0f / s;
+	
+	clip(2,2) = (-z_far) / (z_far - z_near);
+	clip(3,2) = -1.0f;
+	
+	clip(2,3) = (-z_far * z_near) / (z_far - z_near);
+	
+	return clip;
+}
+
+void load_mesh(TriangleMesh mesh);
+
+const char* vSource3 = ""
+"#version 330 core\n"
+"layout (location = 0) in vec3 aPos;"
+"layout (location = 1) in vec3 cin;"
+"out vec3 color;"
+"uniform mat4 tfrm;"
+"uniform mat4 clip;"
+"void main() {"
+"color = cin;"
+"vec4 nPos = clip * tfrm * vec4(aPos.xyz, 1.0);"
+"gl_Position = vec4(nPos);"
+"}\0";
+const char* fSource3 = ""
+"#version 330 core\n"
+"out vec4 FragColor;"
+"in vec3 color;"
+"void main() {"
+"FragColor = vec4(color.x, color.y, color.z, 1.0f);"
+"}\0";
+
+Matrix4x4 clip, w2c, c2w, cam_trs, cam_rot;
+Vector3 up, right, forward;
+Real pitch, yaw, roll;
+Real s, a, z_near, z_far;
+
+void setCam(Matrix4x4 cam2w) {
+	
+	pitch = 0.0;
+	yaw = 0.0;
+	roll = 0.0;
+	
+	w2c = inverse(cam2w);
+	c2w = cam2w;
+	
+	cam_trs = Matrix4x4::identity();
+	cam_rot = Matrix4x4::identity();
+	
+	right.x = cam2w(0,0);
+	right.y = cam2w(1,0);
+	right.z = cam2w(2,0);
+	
+	up.x = cam2w(0,1);
+	up.y = cam2w(1,1);
+	up.z = cam2w(2,1);
+	
+	forward.x = - cam2w(0,2);
+	forward.y = - cam2w(1,2);
+	forward.z = - cam2w(2,2);
+}
+
 void hw_3_3(const std::vector<std::string> &params) {
 	// HW 3.3: Render a scene
 	if (params.size() == 0) {
 		return;
 	}
-
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
+	
+	GLFWwindow* window = setup_Window(scene.camera.resolution.x, scene.camera.resolution.y);
+	
+	s = scene.camera.s;
+	a = Real(scene.camera.resolution.x) / Real(scene.camera.resolution.y);
+	z_near = scene.camera.z_near;
+	z_far = scene.camera.z_far;
+	
+	Vector3 color = scene.background;
+	
+	unsigned int sProgram;
+	sProgram = compile_Shaders(&vSource3, &fSource3);
+	
+	int meshes = (int) scene.meshes.size();
+	TriangleMesh mesh;
+	//meshes = 1; // debugging
+	
+	std::vector<unsigned int> vao(meshes), vbo(meshes), ebo(meshes), vertices(meshes), faces(meshes);
+	float* vertexBuffer;
+	unsigned int* faceBuffer;
+	std::vector<Matrix4x4> o2w(meshes);
+	
+	setCam(scene.camera.cam_to_world);
+	clip = clipMatrix(s, a, z_near, z_far);
+	
+	for (int i = 0; i < meshes; i++) {
+		
+		mesh = scene.meshes[i];
+		
+		o2w[i] = mesh.model_matrix;
+		
+		glGenVertexArrays(1, &vao[i]);
+		glBindVertexArray(vao[i]);
+		
+		glGenBuffers(1, &vbo[i]);
+		glGenBuffers(1, &ebo[i]);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[i]);
+		
+		vertices[i] = (int) mesh.vertices.size();
+		faces[i] = (int) mesh.faces.size();
+		
+		// load vertices & vertex colors
+		
+		vertexBuffer = (float*) malloc(vertices[i] * sizeof(float) * 3 * 2);
+		if (vertexBuffer == NULL) {
+			std::cerr << "vertex buffer allocation failed\n" << std::endl;
+			exit(1);
+		}
+		
+		for (int v = 0; v < vertices[i]; v++) {
+			vertexBuffer[6*v + 0] = mesh.vertices[v][0];
+			vertexBuffer[6*v + 1] = mesh.vertices[v][1];
+			vertexBuffer[6*v + 2] = mesh.vertices[v][2];
+			
+			vertexBuffer[6*v + 3] = mesh.vertex_colors[v][0];
+			vertexBuffer[6*v + 4] = mesh.vertex_colors[v][1];
+			vertexBuffer[6*v + 5] = mesh.vertex_colors[v][2];
+		}
+		
+		// load face vertex indices
+		
+		faceBuffer = (unsigned int *) malloc(faces[i] * sizeof(unsigned int) * 3);
+		if (faceBuffer == NULL) {
+			std::cerr << "face buffer allocation failed\n" << std::endl;
+			exit(1);
+		}
+		
+		for (int f = 0; f < faces[i]; f++) {
+			faceBuffer[3*f + 0] = mesh.faces[f][0];
+			faceBuffer[3*f + 1] = mesh.faces[f][1];
+			faceBuffer[3*f + 2] = mesh.faces[f][2];
+		}
+		
+		// move data into array
+		glBufferData(GL_ARRAY_BUFFER, vertices[i] * sizeof(float) * 3 * 2, vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces[i] * sizeof(unsigned int) * 3, faceBuffer, GL_STATIC_DRAW);
+		
+		free(vertexBuffer);
+		free(faceBuffer);
+		
+		// assign vao attributes
+		// vertex position
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		
+		// vertex color
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		
+	}
+	
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glUseProgram(sProgram);
+	
+	
+	Matrix4x4 tfrm;
+	
+	// render loop
+	while(!glfwWindowShouldClose(window)) {
+		
+		// input
+		processInput3(window);
+		
+		// rendering things:
+		
+		
+		// set clear color and clear the screen
+		glClearColor(color.x, color.y, color.z, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		unsigned int tfrmLocation = glGetUniformLocation(sProgram, "tfrm");
+		unsigned int clipLocation = glGetUniformLocation(sProgram, "clip");
+		glUniformMatrix4fv(clipLocation, 1, GL_FALSE, &clip.data[0][0]);
+		
+		Matrix4x4 tfrm = Matrix4x4::identity();
+		for (int i = 0; i < meshes; ++i) {
+			glBindVertexArray(vao[i]);
+			
+			
+			w2c = inverse(cam_trs * c2w);
+			tfrm = w2c * o2w[i];
+			glUniformMatrix4fv(tfrmLocation, 1, GL_FALSE, &tfrm.data[0][0]);
+			
+			glDrawElements(GL_TRIANGLES, faces[i] * 3, GL_UNSIGNED_INT, 0);
+		}
+		// glDrawArrays(GL_TRIANGLES, 0, 3);
+		
+		// events and buffer swap
+		glfwSwapBuffers(window);	// echanges color buffer an ouputs to the screen
+		glfwPollEvents();			// check for events (like controller input)
+	}
+	
+	// cleanup and close glfw
+	
+	for (int i = 0; i < meshes; ++i) {
+		glDeleteVertexArrays(1, &vao[i]);
+		glDeleteBuffers(1, &vbo[i]);
+		glDeleteBuffers(1, &ebo[i]);
+	}
+	glDeleteProgram(sProgram);
+	
+	
+	glfwTerminate();
+	
 }
 
 void hw_3_4(const std::vector<std::string> &params) {
@@ -284,6 +588,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
+void framebuffer_size_callback3(GLFWwindow* window, int width, int height) {
+	glViewport(0, 0, width, height);
+	a = Real(width) / Real(height);
+	clip = clipMatrix(s, a, z_near, z_far);
+}
+
 // handle input
 void processInput(GLFWwindow *window) {
 	
@@ -292,3 +602,69 @@ void processInput(GLFWwindow *window) {
 		glfwSetWindowShouldClose(window, true);
 	}
 }
+
+void processInput3(GLFWwindow *window) {
+	
+	float mSpeed = 0.01;
+	float rSpeed = 0.1;
+	
+	// close window w/ esc key
+	if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, true);
+	}
+	
+	// (R) reset
+	if(glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		setCam(c2w);
+	}
+	
+	if(glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+		mSpeed = mSpeed * 10.0;
+		rSpeed = rSpeed * 10.0;
+	}
+	
+	// (W) forward
+	if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) + (mSpeed * forward.x);
+		cam_trs(1,3) = cam_trs(1,3) + (mSpeed * forward.y);
+		cam_trs(2,3) = cam_trs(2,3) + (mSpeed * forward.z);
+	}
+	
+	// (S) backwards
+	if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) - (mSpeed * forward.x);
+		cam_trs(1,3) = cam_trs(1,3) - (mSpeed * forward.y);
+		cam_trs(2,3) = cam_trs(2,3) - (mSpeed * forward.z);
+	}
+	
+	// (A) left
+	if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) - (mSpeed * right.x);
+		cam_trs(1,3) = cam_trs(1,3) - (mSpeed * right.y);
+		cam_trs(2,3) = cam_trs(2,3) - (mSpeed * right.z);
+	}
+	
+	// (D) right
+	if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) + (mSpeed * right.x);
+		cam_trs(1,3) = cam_trs(1,3) + (mSpeed * right.y);
+		cam_trs(2,3) = cam_trs(2,3) + (mSpeed * right.z);
+	}
+	
+	// (E) up
+	if(glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) + (mSpeed * up.x);
+		cam_trs(1,3) = cam_trs(1,3) + (mSpeed * up.y);
+		cam_trs(2,3) = cam_trs(2,3) + (mSpeed * up.z);
+	}
+	
+	// (Q) down
+	if(glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+		cam_trs(0,3) = cam_trs(0,3) - (mSpeed * up.x);
+		cam_trs(1,3) = cam_trs(1,3) - (mSpeed * up.y);
+		cam_trs(2,3) = cam_trs(2,3) - (mSpeed * up.z);
+	}
+
+
+}
+
