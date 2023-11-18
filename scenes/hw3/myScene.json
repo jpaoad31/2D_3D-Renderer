@@ -1,0 +1,37 @@
+{
+    "camera":
+    {
+        "resolution": [800, 600],
+        "transform": [
+            {
+                "lookat":
+                {
+                    "position": [-3, 5, 2],
+                    "target": [-3, 0, 1.5],
+                    "up": [0, 0, 1]
+                }
+            }
+        ],
+        "s": 0.4,
+        "z_near": 0.1,
+        "z_far": 100
+    },
+    "background": [
+        0.1, 0.07, 0.15
+    ],
+    "objects": [
+        {
+            "filename": "luigiN.ply",
+            "transform": [
+                {"translate": [-3, 0, 0]}
+            ]
+        },
+        {
+            "filename": "sphere.ply",
+            "transform": [
+				{"translate": [0, 0, 0],
+				 "scale": [0.1, 0.1, 0.1]}
+            ]
+        }
+    ]
+}

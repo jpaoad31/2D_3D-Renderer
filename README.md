@@ -1,3 +1,15 @@
+# HW 1
+John Adams A16499049
+
+I did not do any of the bonus points for this assignment, defintely spent too long trying to figure out the matrix transform to realize that I forgot to not swap out the 1.0 for the w vector at the end of the transformation process...
+
+## 2.5 Design a Scene
+
+It's another luigi. I spent forever making another model, but it's vertex normals ended up inverted which was giving my lighting engine some issues (all white faces?) so know that I did try, not hard enough though.
+
+scene: `scenes/hw3/myScene.json`
+image: `outputs/luigi_lighting.png`
+
 # HW 2
 John Adams A16499049
 
@@ -18,7 +30,7 @@ He has 26417 Vertices and I got it to render in only 0.175 seconds on a base M1 
 Similarly the teapot renders in 0.048 seconds in my implmentation.
 
 
-#  HW 1
+# HW 1
 John Adams A16499049
 
 

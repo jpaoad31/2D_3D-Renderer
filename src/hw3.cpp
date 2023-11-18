@@ -256,7 +256,7 @@ void hw_3_2(const std::vector<std::string> &params) {
 	
 }
 
-GLFWwindow* setup_Window(int w, int h) {
+GLFWwindow* setup_Window(int w, int h, char* title) {
 	// setting up context and stuff
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -265,7 +265,7 @@ GLFWwindow* setup_Window(int w, int h) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); //macOS compatibility line
 	
 	// creating a window object
-	GLFWwindow* window = glfwCreateWindow(w, h, "3.3 do it all", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(w, h, title, NULL, NULL);
 	if (window == NULL) { std::cerr << "Failed to create GLFW window\n"; glfwTerminate(); exit(1); }
 	glfwMakeContextCurrent(window);
 	
@@ -384,7 +384,7 @@ const char* fSource3 = ""
 "}\0";
 
 Matrix4x4 clip, w2c, c2w, cam_trs, cam_rot;
-Vector3 up, right, forward;
+Vector3 up, right, forward, camPos;
 Real pitch, yaw, roll;
 Real s, a, z_near, z_far;
 
@@ -411,6 +411,10 @@ void setCam(Matrix4x4 cam2w) {
 	forward.x = - cam2w(0,2);
 	forward.y = - cam2w(1,2);
 	forward.z = - cam2w(2,2);
+	
+	camPos.x = cam2w(0,3);
+	camPos.y = cam2w(1,3);
+	camPos.z = cam2w(2,3);
 }
 
 void hw_3_3(const std::vector<std::string> &params) {
@@ -421,7 +425,9 @@ void hw_3_3(const std::vector<std::string> &params) {
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
 	
-	GLFWwindow* window = setup_Window(scene.camera.resolution.x, scene.camera.resolution.y);
+	char title[] = "3.3 do it all\0";
+	
+	GLFWwindow* window = setup_Window(scene.camera.resolution.x, scene.camera.resolution.y, title);
 	
 	s = scene.camera.s;
 	a = Real(scene.camera.resolution.x) / Real(scene.camera.resolution.y);
@@ -569,14 +575,238 @@ void hw_3_3(const std::vector<std::string> &params) {
 	
 }
 
+const char* vSource4 = ""
+"#version 330 core\n"
+"layout (location = 0) in vec3 aPos;"
+"layout (location = 1) in vec3 cin;"
+"layout (location = 2) in vec3 nv;"
+"layout (location = 3) in vec2 uv;"
+"out vec3 color;"
+"out vec3 normal;"
+"out vec2 txture;"
+"out vec3 fragPos;"
+"uniform mat4 o2w;"
+"uniform mat4 tfrm;"
+"void main() {"
+"color = cin;"
+"normal = (o2w * vec4(nv.xyz, 0.0)).xyz;"
+"txture = uv;"
+"fragPos = (o2w * vec4(aPos.xyz, 1.0)).xyz;"
+"vec4 nPos = tfrm * vec4(aPos.xyz, 1.0);"
+"gl_Position = vec4(nPos);"
+"}\0";
+const char* fSource4 = ""
+"#version 330 core\n"
+"out vec4 FragColor;"
+"uniform vec3 light;"
+"uniform vec2 light_params;"
+"uniform vec3 camPos;"
+"in vec3 color;"
+"in vec3 normal;"
+"in vec2 txture;"
+"in vec3 fragPos;"
+"void main() {"
+"vec3 n = normalize(normal);"
+"vec3 l_dir = normalize(light);"
+"float diff = max(dot(n, l_dir), 0.0);"
+"vec3 viewDir = normalize(camPos - fragPos);"
+"vec3 reflectDir = reflect(-l_dir, normal);"
+"float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);"
+"vec3 global = light_params.x * color;"
+"float specular = light_params.y * spec;"
+"float lighting = diff + specular + light_params.x;"
+"FragColor = vec4(lighting * color, 1.0f);"
+"}\0";
+
+Vector3 light_dir;
+Real light_amb, light_spec;
+
+void updateCamPos() {
+	Matrix4x4 newCam = cam_trs * c2w;
+	camPos.x = newCam(0,3);
+	camPos.y = newCam(1,3);
+	camPos.z = newCam(2,3);
+}
+
 void hw_3_4(const std::vector<std::string> &params) {
 	// HW 3.4: Render a scene with lighting
 	if (params.size() == 0) {
 		return;
 	}
-
 	Scene scene = parse_scene(params[0]);
 	std::cout << scene << std::endl;
+	
+	char title[] = "3.4 now add lighting\0";
+	
+	GLFWwindow* window = setup_Window(scene.camera.resolution.x, scene.camera.resolution.y, title);
+	
+	s = scene.camera.s;
+	a = Real(scene.camera.resolution.x) / Real(scene.camera.resolution.y);
+	z_near = scene.camera.z_near;
+	z_far = scene.camera.z_far;
+	
+	Vector3 color = scene.background;
+	light_dir = Vector3(1.0f, 1.0f, 1.0f);
+	light_amb = 0.1;
+	light_spec = 0.5;
+	
+	unsigned int sProgram;
+	sProgram = compile_Shaders(&vSource4, &fSource4);
+	
+	int meshes = (int) scene.meshes.size();
+	TriangleMesh mesh;
+	//meshes = 1; // debugging
+	
+	std::vector<unsigned int> vao(meshes), vbo(meshes), ebo(meshes), vertices(meshes), faces(meshes);
+	float* vertexBuffer;
+	unsigned int* faceBuffer;
+	std::vector<Matrix4x4> o2w(meshes);
+	
+	setCam(scene.camera.cam_to_world);
+	clip = clipMatrix(s, a, z_near, z_far);
+	
+	for (int i = 0; i < meshes; i++) {
+		
+		mesh = scene.meshes[i];
+		
+		o2w[i] = mesh.model_matrix;
+		
+		glGenVertexArrays(1, &vao[i]);
+		glBindVertexArray(vao[i]);
+		
+		glGenBuffers(1, &vbo[i]);
+		glGenBuffers(1, &ebo[i]);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[i]);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo[i]);
+		
+		vertices[i] = (int) mesh.vertices.size();
+		faces[i] = (int) mesh.faces.size();
+		
+		// load vertices & vertex colors
+		
+		vertexBuffer = (float*) malloc(vertices[i] * sizeof(float) * 11);
+		if (vertexBuffer == NULL) {
+			std::cerr << "vertex buffer allocation failed\n" << std::endl;
+			exit(1);
+		}
+		
+		for (int v = 0; v < vertices[i]; v++) {
+			vertexBuffer[11*v + 0] = mesh.vertices[v][0];
+			vertexBuffer[11*v + 1] = mesh.vertices[v][1];
+			vertexBuffer[11*v + 2] = mesh.vertices[v][2];
+			
+			vertexBuffer[11*v + 3] = mesh.vertex_colors[v][0];
+			vertexBuffer[11*v + 4] = mesh.vertex_colors[v][1];
+			vertexBuffer[11*v + 5] = mesh.vertex_colors[v][2];
+			
+			vertexBuffer[11*v + 6] = mesh.vertex_normals[v][0];
+			vertexBuffer[11*v + 7] = mesh.vertex_normals[v][1];
+			vertexBuffer[11*v + 8] = mesh.vertex_normals[v][2];
+			
+			//vertexBuffer[11*v + 9] = mesh.uvs[v][0];
+			//vertexBuffer[11*v + 10] = mesh.uvs[v][1];
+		}
+		
+		// load face vertex indices
+		
+		faceBuffer = (unsigned int *) malloc(faces[i] * sizeof(unsigned int) * 3);
+		if (faceBuffer == NULL) {
+			std::cerr << "face buffer allocation failed\n" << std::endl;
+			exit(1);
+		}
+		
+		for (int f = 0; f < faces[i]; f++) {
+			faceBuffer[3*f + 0] = mesh.faces[f][0];
+			faceBuffer[3*f + 1] = mesh.faces[f][1];
+			faceBuffer[3*f + 2] = mesh.faces[f][2];
+		}
+		
+		// move data into array
+		glBufferData(GL_ARRAY_BUFFER, vertices[i] * sizeof(float) * 11, vertexBuffer, GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces[i] * sizeof(unsigned int) * 3, faceBuffer, GL_STATIC_DRAW);
+		
+		free(vertexBuffer);
+		free(faceBuffer);
+		
+		// assign vao attributes
+		// vertex position
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		
+		// vertex color
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+		
+		// vertex uv
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(6 * sizeof(float)));
+		glEnableVertexAttribArray(2);
+		
+		// vertex uv
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(float), (void*)(9 * sizeof(float)));
+		glEnableVertexAttribArray(3);
+		
+	}
+	
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glUseProgram(sProgram);
+	
+	
+	Matrix4x4 tfrm;
+	
+	// render loop
+	while(!glfwWindowShouldClose(window)) {
+		
+		// input
+		processInput3(window);
+		updateCamPos();
+		
+		// rendering things:
+		
+		
+		// set clear color and clear the screen
+		glClearColor(color.x, color.y, color.z, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		unsigned int tfrmLocation = glGetUniformLocation(sProgram, "tfrm");
+		unsigned int lightLocation = glGetUniformLocation(sProgram, "light");
+		unsigned int paramsLocation = glGetUniformLocation(sProgram, "light_params");
+		unsigned int o2wLocation = glGetUniformLocation(sProgram, "o2w");
+		unsigned int camPosLocation = glGetUniformLocation(sProgram, "camPos");
+		glUniform3f(lightLocation, light_dir[0], light_dir[1], light_dir[2]);
+		glUniform2f(paramsLocation, light_amb, light_spec);
+		glUniform3f(camPosLocation, camPos.x, camPos.y, camPos.z);
+		Matrix4x4 tfrm = Matrix4x4::identity();
+		for (int i = 0; i < meshes; ++i) {
+			glBindVertexArray(vao[i]);
+			
+			
+			w2c = inverse(cam_trs * c2w);
+			tfrm = clip * w2c * o2w[i];
+			glUniformMatrix4fv(tfrmLocation, 1, GL_FALSE, &tfrm.data[0][0]);
+			glUniformMatrix4fv(o2wLocation, 1, GL_FALSE, &o2w[i].data[0][0]);
+			
+			glDrawElements(GL_TRIANGLES, faces[i] * 3, GL_UNSIGNED_INT, 0);
+		}
+		// glDrawArrays(GL_TRIANGLES, 0, 3);
+		
+		// events and buffer swap
+		glfwSwapBuffers(window);	// echanges color buffer an ouputs to the screen
+		glfwPollEvents();			// check for events (like controller input)
+	}
+	
+	// cleanup and close glfw
+	
+	for (int i = 0; i < meshes; ++i) {
+		glDeleteVertexArrays(1, &vao[i]);
+		glDeleteBuffers(1, &vbo[i]);
+		glDeleteBuffers(1, &ebo[i]);
+	}
+	glDeleteProgram(sProgram);
+	
+	
+	glfwTerminate();
 }
 
 // -----------------------------------
