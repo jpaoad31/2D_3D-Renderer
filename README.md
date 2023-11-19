@@ -12,7 +12,7 @@ I animated the direct lighting to rotate around the vertical (Z) axis, which all
 It's an expansion of my scene from the previous homework. Luigi is now properly (or as good as I could) posed and is jumping towards a super mushroom while on the Comet Observatory. Sticking with the theme of borrowed Super Mario assets.
 
 scene: `scenes/hw3/myScene.json`
-image: `outputs/hw_3_5_myScene.mp4`
+video: `outputs/hw_3_5_myScene.mp4`
 
 credits:
 
