@@ -1,14 +1,26 @@
-# HW 1
+# HW 3
 John Adams A16499049
 
-I did not do any of the bonus points for this assignment, defintely spent too long trying to figure out the matrix transform to realize that I forgot to not swap out the 1.0 for the w vector at the end of the transformation process...
+I only did **one** of the bonuses for this assignment: 2.4 [lighting animation]
+
+## 2.4 Bonus [Lighting Animation]
+
+I animated the direct lighting to rotate around the vertical (Z) axis, which allows the models to be lit from all sides. This is implemented in my part 5 (Design a Scene) and thus can be found in `outputs/hw_3_5_myScene.mp4`.
 
 ## 2.5 Design a Scene
 
-It's another luigi. I spent forever making another model, but it's vertex normals ended up inverted which was giving my lighting engine some issues (all white faces?) so know that I did try, not hard enough though.
+It's an expansion of my scene from the previous homework. Luigi is now properly (or as good as I could) posed and is jumping towards a super mushroom while on the Comet Observatory. Sticking with the theme of borrowed Super Mario assets.
 
 scene: `scenes/hw3/myScene.json`
-image: `outputs/luigi_lighting.png`
+image: `outputs/hw_3_5_myScene.mp4`
+
+credits:
+
+Luigi (source: Nintendo, ripped by bigbabyjake https://sketchfab.com/3d-models/luigi-super-mario-bros-wonder-1c4b111f8ab9409396e8c486c303a7be )
+Comet Observatory (source: Nintendo, ripped by Flashcat77 https://www.deviantart.com/flashcat77/art/Comet-Observatory-Blender-835313893 )
+Super Mushroom (source: modeled by smarthug https://sketchfab.com/3d-models/mario-super-mushroom-bfecb0aee2984ddca543ea90dcb270cc )
+
+----------------------------------------------
 
 # HW 2
 John Adams A16499049
@@ -29,6 +41,7 @@ He has 26417 Vertices and I got it to render in only 0.175 seconds on a base M1 
 
 Similarly the teapot renders in 0.048 seconds in my implmentation.
 
+------------------------------------------------
 
 # HW 1
 John Adams A16499049

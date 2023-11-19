@@ -6,32 +6,42 @@
             {
                 "lookat":
                 {
-                    "position": [-3, 5, 2],
-                    "target": [-3, 0, 1.5],
+                    "position": [5, -70, 5],
+                    "target": [-24, 0, -2],
                     "up": [0, 0, 1]
                 }
             }
         ],
         "s": 0.4,
         "z_near": 0.1,
-        "z_far": 100
+        "z_far": 200
     },
     "background": [
         0.1, 0.07, 0.15
     ],
     "objects": [
         {
-            "filename": "luigiN.ply",
+            "filename": "luigiJump.ply",
             "transform": [
-                {"translate": [-3, 0, 0]}
+				{"scale": [2,2,2]},
+				{"rotate": [-120, 0, 0, 1]},
+				{"translate": [-5, -55, 1.8]}
             ]
         },
         {
-            "filename": "sphere.ply",
+            "filename": "cometObservatory.ply",
             "transform": [
-				{"translate": [0, 0, 0],
-				 "scale": [0.1, 0.1, 0.1]}
+				{"translate": [0, 0, 0]},
+				{"scale": [1.0, 1.0, 1.0]}
             ]
-        }
+        },
+		{
+			"filename": "mushroom.ply",
+			"transform": [
+				{"scale": [0.3,0.3,0.3]},
+				{"rotate": [-180, 0, 0, 1]},
+				{"translate": [-2, -57, 7]}
+			]
+		}
     ]
 }

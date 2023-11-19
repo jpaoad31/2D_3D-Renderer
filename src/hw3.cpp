@@ -610,7 +610,7 @@ const char* fSource4 = ""
 "vec3 l_dir = normalize(light);"
 "float diff = max(dot(n, l_dir), 0.0);"
 "vec3 viewDir = normalize(camPos - fragPos);"
-"vec3 reflectDir = reflect(-l_dir, normal);"
+"vec3 reflectDir = normalize(reflect(-l_dir, normal));"
 "float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);"
 "vec3 global = light_params.x * color;"
 "float specular = light_params.y * spec;"
@@ -754,6 +754,12 @@ void hw_3_4(const std::vector<std::string> &params) {
 	
 	
 	Matrix4x4 tfrm;
+	Real angle = (2*c_PI)/600;
+	Matrix3x3 light_rot = Matrix3x3::identity();
+	light_rot(0,0) = cos(angle);
+	light_rot(0,1) = - sin(angle);
+	light_rot(1,0) = sin(angle);
+	light_rot(1,1) = cos(angle);
 	
 	// render loop
 	while(!glfwWindowShouldClose(window)) {
@@ -768,6 +774,8 @@ void hw_3_4(const std::vector<std::string> &params) {
 		// set clear color and clear the screen
 		glClearColor(color.x, color.y, color.z, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+		
 		
 		unsigned int tfrmLocation = glGetUniformLocation(sProgram, "tfrm");
 		unsigned int lightLocation = glGetUniformLocation(sProgram, "light");
@@ -790,6 +798,8 @@ void hw_3_4(const std::vector<std::string> &params) {
 			glDrawElements(GL_TRIANGLES, faces[i] * 3, GL_UNSIGNED_INT, 0);
 		}
 		// glDrawArrays(GL_TRIANGLES, 0, 3);
+		
+		//light_dir = light_rot * light_dir;
 		
 		// events and buffer swap
 		glfwSwapBuffers(window);	// echanges color buffer an ouputs to the screen
