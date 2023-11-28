@@ -1,9 +1,17 @@
+# HW 4
+
+John Adams A16499049
+
+I made a model of the keurig that sits on my desk. What goes better with a donut than coffee?
+
+I am also not submitting any hw3 bonuses with this submission.
+
 # HW 3
 John Adams A16499049
 
-I only did **one** of the bonuses for this assignment: 2.4 [lighting animation]
+I only did **one** of the bonuses for this assignment: 2.4 (lighting animation)
 
-## 2.4 Bonus [Lighting Animation]
+## 2.4 Bonus (Lighting Animation)
 
 I animated the direct lighting to rotate around the vertical (Z) axis, which allows the models to be lit from all sides. This is implemented in my part 5 (Design a Scene) and thus can be found in `outputs/hw_3_5_myScene.mp4`.
 
